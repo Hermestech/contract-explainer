@@ -3,7 +3,7 @@
     <div class="content-container">
             <h1 class="title">Explicador de contratos🤖📄 </h1>
       <p class="disclaimer">
-        <strong>Aviso:</strong> Esta herramienta proporciona una guía rápida para comprender el contenido de los contratos, pero no constituye asesoría legal. Si necesitas asesoramiento legal, consulta a un abogado.
+        <strong>Aviso</strong> Esta herramienta proporciona una guía rápida para comprender el contenido de los contratos, pero no constituye asesoría legal. Si necesitas asesoramiento legal, consulta a un abogado.
       </p>
       <p class="instructions">
         Esta herramienta se enfoca en contratos de uso común, como contratos de renta, contratos laborales y términos y condiciones. Para obtener los mejores resultados, sigue estas recomendaciones al tomar fotos:
