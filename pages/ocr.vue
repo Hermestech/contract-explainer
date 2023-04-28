@@ -53,8 +53,6 @@
 
 <script>
 import ImagePreview from '../components/ImagePreview.vue';
-import Tesseract from 'tesseract.js'
-import { Configuration, OpenAIApi } from 'openai';
 
 export default {
     components: {
@@ -89,21 +87,29 @@ export default {
     });
 },
     async extractTextFromAllImages() {
-  this.allExtractedText = '';
-  for (let i = 0; i < this.images.length; i++) {
-    try {
-      this.allExtractedText += `Imagen ${i + 1}:\n`;
-      const result = await Tesseract.recognize(this.images[i].src, "spa");
-      const cleanedText = this.removeUnnecessarySpaces(result.data.text);
-      this.allExtractedText += cleanedText;
-      this.allExtractedText += '\n\n';
-    } catch (error) {
-      console.error("Error al extraer texto:", error);
-      this.allExtractedText += 'Error al extraer texto.\n\n';
-    }
-  }
-  // Llamar a sendToChatGPT fuera del bucle for, después de extraer el texto de todas las imágenes
-  this.sendToChatGPT(this.allExtractedText);
+      this.loading = true;
+      try {
+        const formData = new FormData();
+        this.images.forEach((image, index) => {
+        const file = this.dataURLtoFile(image.src, `image-${index}.jpg`);
+        formData.append("image", file);
+        });
+        const response = await fetch("http://localhost:8000/process-image", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error("Error al extraer el texto de las imágenes.");
+        }
+        const data = await response.json();
+        this.chatGPTOutput = data.response;
+      } catch (error) {
+        console.error(error);
+        this.chatGPTOutput = 'Error al extraer el texto.';
+      } finally {
+        this.loading = false;
+      }
 },
 async toggleCamera() {
   if (!this.cameraActive) {
@@ -128,13 +134,6 @@ async toggleCamera() {
     }
     this.cameraActive = false;
   }
-    },
-removeUnnecessarySpaces(text) {
-  const lines = text.split('\n');
-  const cleanedLines = lines.map(line => {
-    return line.trim().replace(/\s+/g, ' ');
-  });
-  return cleanedLines.join('\n');
 },
 async takePicture() {
   if (!this.cameraActive || this.takingPhoto) return;
@@ -160,34 +159,18 @@ resetPhoto() {
     this.photoSrc = null;
     this.toggleCamera();
     },
-    async sendToChatGPT(text) {
-      try {
-        const apiKey = process.env.CHATGPT_API_KEY;
-        const configuration = new Configuration({ apiKey });
-        const openai = new OpenAIApi(configuration);
+    dataURLtoFile(dataurl, filename) {
+      const arr = dataurl.split(",");
+      const mime = arr[0].match(/:(.*?);/)[1];
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
 
-        const basePrompt = "Actua como si fueras un abogado con mucha experiencia en derecho Mexicano. Enlista los puntos más relevantes del documento, recuerda devolverlos en formato de lista para tener mayor legibilidad. Explica cada punto como si tuviera 10 años,también explícame cuáles serían mis obligaciones si firmara ese contrato y cuáles serían las obligaciones de la otra parte. Dime si encuentras algo que pudiera resultarme muy perjudicial si firmara. Si encuentras conceptos dificiles de comprender para mi que no soy abogado, explicame qué significan"
-
-        const completion = await openai.createCompletion({
-          model: "text-davinci-003",
-          prompt: basePrompt + text,
-          max_tokens: 1200,
-          temperature: 0.3,
-        })
-
-        this.chatGPTOutput = this.parseString(completion.data.choices[0].text)
-
-      } catch (error) { 
-        console.error("Error al enviar texto a ChatGPT:", error);
-        this.chatGPTOutput = 'Error al enviar texto a ChatGPT.'
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
       }
-    },
-    parseString(input) {
-    const regex = /\d+\.\s/g;
-    const splitString = input.split(regex);
-
-    return splitString.filter((item) => item !== '');
-    },
+      return new File([u8arr], filename, { type: mime });
+    }
 }
 }
 </script>
