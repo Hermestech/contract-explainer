@@ -8,19 +8,17 @@
         <video ref="video" autoplay playsinline></video>
         <div class="guide"></div>
     </div>
+    <div v-if="loading" class="spinner"></div>
+    <button @click="takePicture" :disabled="!cameraActive || takingPhoto">
+        {{ takingPhoto ? 'Tomando foto...' : 'Tomar foto' }}
+    </button>
+    <button v-if="photoSrc" @click="resetPhoto">Tomar otra foto</button>
     <image-preview 
         v-for="(image, index) in images" 
         :key="index" 
         :src="image.src" 
         :extractedText="image.extractedText"
     />
-    <button @click="takePicture" :disabled="!cameraActive || takingPhoto">
-        {{ takingPhoto ? 'Tomando foto...' : 'Tomar foto' }}
-    </button>
-    <button v-if="photoSrc" @click="resetPhoto">Tomar otra foto</button>
-    <div v-if="photoSrc" class="photo-preview">
-        <img :src="photoSrc" alt="Vista previa de la foto" />
-    </div>
     <button @click="extractTextFromAllImages">Extraer texto</button>
     <pre v-if="allExtractedText">{{ allExtractedText }}</pre>
   </div>
@@ -40,7 +38,9 @@ export default {
         cameraActive: false,
         cameraStream: null,
         photoSrc: null,
-        takingPhoto: false,
+      takingPhoto: false,
+      chatGPTOutput: '',
+        loading: false
     }
   },
   methods: {
@@ -59,7 +59,8 @@ export default {
     reader.readAsDataURL(file);
     });
 },
-async extractTextFromAllImages() {
+    async extractTextFromAllImages() {
+  console.log('me diste click')
   this.allExtractedText = '';
   for (let i = 0; i < this.images.length; i++) {
     try {
@@ -67,6 +68,7 @@ async extractTextFromAllImages() {
       const result = await Tesseract.recognize(this.images[i].src, "spa");
       this.allExtractedText += result.data.text;
       this.allExtractedText += '\n\n';
+      this.sendToChatGPT(this.allExtractedText)
     } catch (error) {
       console.error("Error al extraer texto:", error);
       this.allExtractedText += 'Error al extraer texto.\n\n';
@@ -109,6 +111,9 @@ async takePicture() {
   context.drawImage(this.$refs.video, 0, 0, canvas.width, canvas.height);
   this.photoSrc = canvas.toDataURL("image/jpeg");
 
+  // Agrega la imagen tomada desde la cámara al array 'images'
+  this.images.push({ src: this.photoSrc, extractedText: "" });
+
   // Cierra la cámara después de tomar una foto
   this.toggleCamera();
 
@@ -117,20 +122,40 @@ async takePicture() {
 resetPhoto() {
     this.photoSrc = null;
     this.toggleCamera();
-},
+    },
+    async sendToChatGPT(text) {
+      try {
+        const apiKey = "key"
+        const apiUrl = "url"
+        const headers = {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        }
+
+        const data = {
+          prompt: text,
+          max_tokens: 100,
+          temperature: 0.3,
+        }
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(data)
+        })
+        const chatGPTResponse = await response.json()
+        const output = chatGPTResponse.choices[0].text
+        this.chatGPTOutput = output
+      } catch (error) { 
+        console.error("Error al enviar texto a ChatGPT:", error);
+        this.chatGPTOutput = 'Error al enviar texto a ChatGPT.'
+      }
+   
+  }
 }
 }
 </script>
 
 <style scoped>
-.camera-container {
-  position: relative;
-  width: 100%;
-  max-width: 640px;
-  height: 480px;
-  overflow: hidden;
-  margin: 1rem 0;
-}
 
 video {
   width: 100%;
@@ -157,13 +182,48 @@ video {
   width: 100%;
   height: auto;
 }
+.camera-container {
+  position: relative;
+  display: inline-block;
+}
+
 .guide {
   position: absolute;
-  top: 10%;
-  left: 10%;
-  width: 80%;
-  height: 80%;
-  border: 2px dashed rgba(0, 255, 0, 0.5); /* Cambia el color a verde */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 10px solid rgba(0, 255, 0, 0.5);
+  box-sizing: border-box;
   pointer-events: none;
+}
+
+  .spinner {
+  display: inline-block;
+  width: 80px;
+  height: 80px;
+  border: 8px solid #f3f3f3;
+  border-top: 8px solid #3498db;
+  border-radius: 50%;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+  
+    .chatGPTOutput {
+      margin-top: 1rem;
+      padding: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background-color: #f3f3f3;
+      font-family: monospace;
+      white-space: pre-wrap;
 }
 </style>
