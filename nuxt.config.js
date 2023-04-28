@@ -33,9 +33,13 @@ export default {
 
   // Modules: https://go.nuxtjs.dev/config-modules
   modules: [
+    '@nuxtjs/dotenv'
   ],
 
   // Build Configuration: https://go.nuxtjs.dev/config-build
   build: {
+  },
+  env: {
+    CHATGPT_API_KEY: process.env.CHATGPT_API_KEY,
   }
 }
