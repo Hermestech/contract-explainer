@@ -32,7 +32,6 @@
         <video ref="video" autoplay playsinline></video>
         <div class="guide"></div>
       </div>
-      <div v-if="loading" class="spinner"></div>
       <div class="image-grid">
         <image-preview
         v-for="(image, index) in images"
@@ -41,6 +40,7 @@
         :extractedText="image.extractedText"
         />
       </div>
+      <div v-if="loading" class="spinner"></div>
       <div v-if="chatGPTOutput" class="chatgpt-response">
         <h3 v-t="'response'"></h3>
         <ul class="chat-list">
@@ -94,7 +94,7 @@ export default {
         const file = this.dataURLtoFile(image.src, `image-${index}.jpg`);
         formData.append("image", file);
         });
-        const response = await fetch("http://localhost:8000/process-image", {
+        const response = await fetch(process.env.TRANSLATE_URL, {
           method: "POST",
           body: formData,
         });
