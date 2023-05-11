@@ -52,7 +52,7 @@
 </template>
 
 <script>
-import ImagePreview from '../components/ImagePreview.vue';
+import ImagePreview from './ImagePreview.vue';
 
 export default {
     components: {

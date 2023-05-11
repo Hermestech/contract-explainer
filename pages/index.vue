@@ -1,9 +1,13 @@
 <template>
-  <Tutorial/>
+  <Ocr />
 </template>
 
 <script>
+import Ocr from '~/components/ocr.vue';
+
 export default {
-  name: 'IndexPage'
+  components: {
+    Ocr
+  }
 }
 </script>
