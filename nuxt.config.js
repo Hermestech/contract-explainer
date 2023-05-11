@@ -29,7 +29,12 @@ export default {
 
   // Modules for dev and build (recommended): https://go.nuxtjs.dev/config-modules
   buildModules: [
+    '@nuxtjs/google-analytics'
   ],
+
+  googleAnalytics: {
+    id: process.env.GOOGLE_ANALYTICS_ID
+  },
 
   // Modules: https://go.nuxtjs.dev/config-modules
   modules: [
